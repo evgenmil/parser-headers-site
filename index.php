@@ -161,7 +161,7 @@ try {
     if (!isset($outputArray[1])) {
         throw new RuntimeException('Not found list of subdomains');
     }
-    $outputArray[1] = ['rybinsk', 'kostroma', 'balashiha'];
+    $outputArray[1] = ['www'] + $outputArray[1];
     $cityList = array_unique(array_filter($outputArray[1]));
 
     $mediaGroups = new ArrayOfInputMedia();
