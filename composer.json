@@ -1,0 +1,18 @@
+{
+  "name": "evgeniy/parser-kvestinfo",
+  "authors": [
+    {
+      "name": "Evgeniy M",
+      "email": "evg.milushkin@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "guzzlehttp/guzzle": "^7.0",
+    "ext-curl": "*",
+    "ext-json": "*",
+    "ext-simplexml": "*",
+    "telegram-bot/api": "^2.5",
+    "vlucas/phpdotenv": "^5.6"
+  }
+}
