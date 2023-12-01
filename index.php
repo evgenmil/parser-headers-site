@@ -147,6 +147,9 @@ $documents = [];
 $bot = new BotApi($_ENV['TG_BOT_TOKEN']);
 $site = 'https://www.' . $_ENV['DOMAIN'];
 $chatId = $_ENV['TG_CHAT_ID'];
+@mkdir('./positions');
+
+echo 'Start...' . PHP_EOL;
 
 try {
     $client = new Client();
@@ -162,6 +165,8 @@ try {
     foreach ($cityList as $city) {
         $sitemapUrl = 'https://' . $city . '.' . $_ENV['DOMAIN'] . '/sitemap.xml';
 
+        echo 'Parse: ' . $sitemapUrl . PHP_EOL;
+
         $clientSitemap = new Client();
         $parser = new ParserKvestinfo();
         $parser->processSitemap($sitemapUrl, $clientSitemap);
@@ -169,13 +174,16 @@ try {
         if (strlen($parser->getOutputData()) > 0) {
             $documents[$city] = new CURLStringFile($parser->getOutputData(), 'invalid_urls_' . $city . '_' . date('Y-m-d-H-i') . '.txt');
         } else {
-            $message .= $city . ': ' . $parser->getSuccessUrls() . ' OK' . PHP_EOL;
+            $m = $city . ': ' . $parser->getSuccessUrls() . ' OK' . PHP_EOL;
+            echo $m;
+            $message .= $m;
         }
     }
 } catch (Exception $e) {
-    $message .= 'Error main process: ' . $e->getMessage() . PHP_EOL;
+    $m = 'Error main process: ' . $e->getMessage() . PHP_EOL;
+    echo $m;
 
-    echo $message;
+    $message .= $m;
 } finally {
     $mediaGroup = [];
     $files = [];
