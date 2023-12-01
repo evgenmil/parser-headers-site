@@ -38,9 +38,10 @@ class InputMediaDocument extends InputMedia
 
 class ParserKvestinfo
 {
-    private $urls;
+    private $urls = [];
     private $outputData = '';
     private $successUrls = 0;
+    private $failUrls = 0;
 
     /**
      * @return string
@@ -83,7 +84,6 @@ class ParserKvestinfo
         } catch (Exception $e) {
             $this->outputData .= "Error processing sitemap: " . $e->getMessage() . "\n";
         } finally {
-            // Добавляем паузу в конце обработки sitemap, чтобы избежать преждевременной остановки
             sleep(1);
         }
     }
@@ -101,6 +101,11 @@ class ParserKvestinfo
         return $this->successUrls;
     }
 
+    public function getFailUrls(): int
+    {
+        return $this->failUrls;
+    }
+
     private function processUrl($url, $client, &$requestCounter): void
     {
         try {
@@ -113,11 +118,10 @@ class ParserKvestinfo
             $this->successUrls++;
         } catch (RequestException $e) {
             $this->outputData .= "URL: $url, Error: " . $e->getMessage() . "\n";
+            $this->failUrls++;
         } finally {
-            // Увеличиваем счетчик запросов
             $requestCounter++;
 
-            // Если достигнут порог запросов, делаем паузу и сбрасываем счетчик
             if ($requestCounter % 10 === 0) {
                 sleep(1);
                 $requestCounter = 0;
@@ -129,13 +133,11 @@ class ParserKvestinfo
     {
         $response = $client->get($sitemapUrl);
         $xml = simplexml_load_string($response->getBody());
-        //$xml = simplexml_load_string(file_get_contents($sitemapUrl));
 
         foreach ($xml->url as $url) {
             $this->urls[] = (string)$url->loc;
         }
 
-        // Обрабатываем вложенные sitemap
         foreach ($xml->sitemap as $nestedSitemap) {
             $this->prepareListUrls((string)$nestedSitemap->loc, $client);
         }
@@ -145,7 +147,7 @@ class ParserKvestinfo
 $message = '';
 $documents = [];
 $bot = new BotApi($_ENV['TG_BOT_TOKEN']);
-$site = 'https://www.' . $_ENV['DOMAIN'];
+$site = 'https://www.' . $_ENV['DOMAIN'] . '/';
 $chatId = $_ENV['TG_CHAT_ID'];
 @mkdir('./positions');
 
@@ -159,6 +161,7 @@ try {
     if (!isset($outputArray[1])) {
         throw new RuntimeException('Not found list of subdomains');
     }
+    $outputArray[1] = ['rybinsk', 'kostroma', 'balashiha'];
     $cityList = array_unique(array_filter($outputArray[1]));
 
     $mediaGroups = new ArrayOfInputMedia();
@@ -173,11 +176,13 @@ try {
 
         if (strlen($parser->getOutputData()) > 0) {
             $documents[$city] = new CURLStringFile($parser->getOutputData(), 'invalid_urls_' . $city . '_' . date('Y-m-d-H-i') . '.txt');
+            $m = $city . ': ' . $parser->getFailUrls() . ' FAIL' . PHP_EOL;
         } else {
             $m = $city . ': ' . $parser->getSuccessUrls() . ' OK' . PHP_EOL;
-            echo $m;
-            $message .= $m;
         }
+
+        $message .= $m;
+        echo $m;
     }
 } catch (Exception $e) {
     $m = 'Error main process: ' . $e->getMessage() . PHP_EOL;
